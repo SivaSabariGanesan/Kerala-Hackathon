@@ -7,11 +7,10 @@ import Checkout from './assets/Components/checkout';
 import Header from './assets/Components/Header';
 import Profile from './assets/Components/Profile';
 import MyOrders from './assets/Components/Myorders';
-import CancelOrder from './assets/Components/cancelorder'; 
-import AdminDashboard from './assets/Components/Admin'; 
+import CancelOrder from './assets/Components/cancelorder';
 
 export default function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null); // No localStorage, just session-based state
   const [order, setOrder] = useState([]);
 
   const handleCheckout = (navigate) => {
@@ -23,8 +22,8 @@ export default function App() {
     console.log('Viewing order history');
   };
 
-  const ProtectedRoute = ({ children, role }) => {
-    return user && user.role === role ? children : <Navigate to="/" />;
+  const handleLogin = (newUser) => {
+    setUser(newUser); // Set the user directly to state
   };
 
   return (
@@ -41,56 +40,13 @@ export default function App() {
             />
           )}
           <Routes>
-            <Route path="/" element={<Login setUser={setUser} />} />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute role="customer">
-                  <Dashboard user={user} setOrder={setOrder} />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/checkout"
-              element={
-                <ProtectedRoute role="customer">
-                  <Checkout order={order} />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute role="customer">
-                  <Profile user={user} />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/my-orders"
-              element={
-                <ProtectedRoute role="customer">
-                  <MyOrders user={user} />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/cancel-order/:orderId"
-              element={
-                <ProtectedRoute role="customer">
-                  <CancelOrder />
-                </ProtectedRoute>
-              }
-            />
-            {/* Admin Dashboard Route */}
-            <Route
-              path="/admin/dashboard"
-              element={
-                <ProtectedRoute role="admin">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/" element={<Login setUser={handleLogin} />} />
+            {/* No ProtectedRoute, user will be able to access these routes if logged in */}
+            <Route path="/dashboard" element={user ? <Dashboard user={user} setOrder={setOrder} /> : <Navigate to="/" />} />
+            <Route path="/checkout" element={user ? <Checkout order={order} /> : <Navigate to="/" />} />
+            <Route path="/profile" element={user ? <Profile user={user} /> : <Navigate to="/" />} />
+            <Route path="/my-orders" element={user ? <MyOrders user={user} /> : <Navigate to="/" />} />
+            <Route path="/cancel-order/:orderId" element={user ? <CancelOrder /> : <Navigate to="/" />} />
           </Routes>
         </div>
       </Router>

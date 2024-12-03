@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { PlusCircle, MinusCircle, ShoppingCart } from 'lucide-react';
 
@@ -12,6 +12,12 @@ const foodItems = [
 export default function Dashboard({ user, setOrder }) {
   const [quantities, setQuantities] = useState({});
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/login");
+    }
+  }, [user, navigate]);
 
   const handleQuantityChange = (id, quantity) => {
     setQuantities({ ...quantities, [id]: quantity });
@@ -66,23 +72,27 @@ export default function Dashboard({ user, setOrder }) {
                       onClick={() => handleQuantityChange(item.id, Math.max(1, (quantities[item.id] || 1) - 1))}
                       className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 transition duration-300"
                     >
-                      <MinusCircle className="w-6 h-6 text-blue-600" />
+                      <MinusCircle className="w-5 h-5 text-gray-700" />
                     </button>
-                    <span className="text-lg font-semibold w-8 text-center">{quantities[item.id] || 1}</span>
+                    <input
+                      type="number"
+                      value={quantities[item.id] || 1}
+                      onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                      className="w-16 text-center border rounded-lg"
+                    />
                     <button
                       onClick={() => handleQuantityChange(item.id, (quantities[item.id] || 1) + 1)}
                       className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 transition duration-300"
                     >
-                      <PlusCircle className="w-6 h-6 text-blue-600" />
+                      <PlusCircle className="w-5 h-5 text-gray-700" />
                     </button>
                   </div>
                 </div>
                 <button
                   onClick={() => addToOrder(item)}
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center"
+                  className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300"
                 >
-                  <ShoppingCart className="w-5 h-5 mr-2" />
-                  Add to Cart
+                  Add to Order
                 </button>
               </div>
             </div>
@@ -92,4 +102,3 @@ export default function Dashboard({ user, setOrder }) {
     </div>
   );
 }
-

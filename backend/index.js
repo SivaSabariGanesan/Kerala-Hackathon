@@ -235,44 +235,5 @@ app.patch('/api/orders/:id/cancel', async (req, res) => {
   }
 });
 
-// Admin Routes
-// Get all users
-app.get('/api/admin/users', async (req, res) => {
-  try {
-    const users = await User.find().sort({ createdAt: -1 });
-    res.json(users);
-  } catch (error) {
-    console.error('Fetch users error:', error);
-    res.status(500).json({ message: 'Could not fetch users' });
-  }
-});
-
-// Get all orders (admin view)
-app.get('/api/admin/orders', async (req, res) => {
-  try {
-    const orders = await Order.find().populate('user').sort({ createdAt: -1 });
-    res.json(orders);
-  } catch (error) {
-    console.error('Fetch orders error:', error);
-    res.status(500).json({ message: 'Could not fetch orders' });
-  }
-});
-
-// Get specific order details (admin)
-app.get('/api/admin/orders/:id', async (req, res) => {
-  try {
-    const order = await Order.findOne({ _id: req.params.id }).populate('user');
-
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
-    }
-
-    res.json(order);
-  } catch (error) {
-    console.error('Fetch order error:', error);
-    res.status(500).json({ message: 'Could not fetch order details' });
-  }
-});
-
 const PORT = process.env.PORT || 5000; 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
