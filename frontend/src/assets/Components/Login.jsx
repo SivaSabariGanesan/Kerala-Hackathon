@@ -1,101 +1,160 @@
-import React from "react";
-import { GoogleLogin } from "@react-oauth/google";
-import { useNavigate } from "react-router-dom";
-import { FaGoogle } from 'react-icons/fa';
-import { GiShoppingBag } from 'react-icons/gi';
-import axios from 'axios';
+import React, { useState } from 'react';
 
-const Login = ({ setUser }) => {
-  const navigate = useNavigate();
+const Alert = ({ children }) => (
+  <div className="p-4 mb-4 text-sm text-red-800 bg-red-100 rounded-lg">
+    {children}
+  </div>
+);
 
-  const handleLoginSuccess = async (response) => {
+const Login = ({ setUser, onNavigate }) => {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleGuestLogin = () => {
+    const guestUser = {
+      name: "Guest User",
+      email: "guest@example.com",
+      picture: "/api/placeholder/150/150"
+    };
+    setUser(guestUser);
+    onNavigate("/dashboard");
+  };
+
+  const handleAdminSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
     try {
-      const base64Url = response.credential.split('.')[1];
-      const base64 = base64Url.replace('-', '+').replace('_', '/');
-      const decodedUser = JSON.parse(window.atob(base64));
+      const response = await fetch('http://localhost:5000/api/auth/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password })
+      });
 
-      const userResponse = await axios.post('http://localhost:5000/api/auth/google', {
-        name: decodedUser.name,
-        email: decodedUser.email,
-        picture: decodedUser.picture
-      }, { withCredentials: true });
-
-      setUser(userResponse.data);
-      navigate("/dashboard"); // Ensure navigation after setting the user
+      if (!response.ok) throw new Error('Login failed');
+      
+      const userData = await response.json();
+      setUser({ ...userData, isAdmin: true });
+      onNavigate("/admin/dashboard");
     } catch (error) {
-      console.error("Login Failed", error);
-      alert("Login failed. Please try again.");
+      setError('Login failed. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleLoginFailure = (error) => {
-    console.error("Google Login Failed", error);
-    alert("Google login failed");
-  };
+  const regularLoginSection = (
+    <>
+      <div className="space-y-6">
+        <button
+          onClick={() => onNavigate("/auth/google")}
+          className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        >
+          <span className="mr-2">G</span>
+          Sign in with Google
+        </button>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">
+              Or continue as
+            </span>
+          </div>
+        </div>
+
+        <button 
+          onClick={handleGuestLogin}
+          className="w-full py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+        >
+          Guest Login
+        </button>
+      </div>
+
+      <div className="text-center">
+        <p className="mt-2 text-xs text-gray-600">
+          By signing in, you agree to our{" "}
+          <button className="text-emerald-600 hover:text-emerald-500">
+            Terms of Service
+          </button>
+        </p>
+      </div>
+    </>
+  );
+
+  const adminLoginSection = (
+    <form onSubmit={handleAdminSubmit} className="space-y-6">
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          Email address
+        </label>
+        <input
+          id="email"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          Password
+        </label>
+        <input
+          id="password"
+          type="password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={isLoading}
+        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+      >
+        {isLoading ? 'Signing in...' : 'Sign in'}
+      </button>
+    </form>
+  );
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-100 to-blue-200">
       <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-2xl">
         <div className="text-center">
-          <GiShoppingBag className="mx-auto h-16 w-16 text-emerald-500" />
+          <div className="mx-auto h-16 w-16 text-emerald-500 text-4xl font-bold flex items-center justify-center border-2 border-emerald-500 rounded-full">
+            FP
+          </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Fresh Picks
+            Fresh Picks {isAdmin ? 'Admin' : ''}
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Discover fresh, quality ingredients
+            {isAdmin ? 'Administration Portal' : 'Discover fresh, quality ingredients'}
           </p>
         </div>
 
-        <div className="space-y-6">
-          <GoogleLogin
-            onSuccess={handleLoginSuccess}
-            onError={handleLoginFailure}
-            useOneTap
-            render={({ onClick }) => (
-              <button
-                onClick={onClick}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              >
-                <FaGoogle className="mr-2 h-5 w-5" />
-                Sign in with Google
-              </button>
-            )}
-          />
+        {error && <Alert>{error}</Alert>}
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">
-                Or continue as
-              </span>
-            </div>
-          </div>
-
-          <button 
-            onClick={() => {
-              const guestUser = {
-                name: "Guest User",
-                email: "guest@example.com",
-                picture: "https://via.placeholder.com/150"
-              };
-              setUser(guestUser);
-              navigate("/dashboard");
-            }}
-            className="w-full py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-          >
-            Guest Login
-          </button>
-        </div>
+        {isAdmin ? adminLoginSection : regularLoginSection}
 
         <div className="text-center">
-          <p className="mt-2 text-xs text-gray-600">
-            By signing in, you agree to our{" "}
-            <a href="#" className="text-emerald-600 hover:text-emerald-500">
-              Terms of Service
-            </a>
-          </p>
+          <button 
+            onClick={() => setIsAdmin(!isAdmin)}
+            className="text-sm text-emerald-600 hover:text-emerald-500"
+          >
+            {isAdmin ? 'Return to user login' : 'Admin login'}
+          </button>
         </div>
       </div>
     </div>
