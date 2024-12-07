@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+
 import Login from './assets/Components/Login';
 import Dashboard from './assets/Components/Dashboard';
-import Checkout from './assets/Components/checkout';
+import Checkout from './assets/Components/Checkout';
 import Header from './assets/Components/Header';
 import Profile from './assets/Components/Profile';
-import MyOrders from './assets/Components/Myorders';
-import CancelOrder from './assets/Components/cancelorder';
+import MyOrders from './assets/Components/MyOrders';
+import CancelOrder from './assets/Components/CancelOrder';
+import OrderTracking from './assets/Components/TrackingSystem'; // Import OrderTracking component
 
 export default function App() {
   const [user, setUser] = useState(null); // No localStorage, just session-based state
@@ -41,12 +43,30 @@ export default function App() {
           )}
           <Routes>
             <Route path="/" element={<Login setUser={handleLogin} />} />
-            {/* No ProtectedRoute, user will be able to access these routes if logged in */}
-            <Route path="/dashboard" element={user ? <Dashboard user={user} setOrder={setOrder} /> : <Navigate to="/" />} />
-            <Route path="/checkout" element={user ? <Checkout order={order} /> : <Navigate to="/" />} />
-            <Route path="/profile" element={user ? <Profile user={user} /> : <Navigate to="/" />} />
-            <Route path="/my-orders" element={user ? <MyOrders user={user} /> : <Navigate to="/" />} />
-            <Route path="/cancel-order/:orderId" element={user ? <CancelOrder /> : <Navigate to="/" />} />
+            <Route
+              path="/dashboard"
+              element={<Dashboard user={user} setOrder={setOrder} />}
+            />
+            <Route
+              path="/checkout"
+              element={<Checkout order={order} />}
+            />
+            <Route
+              path="/profile"
+              element={<Profile user={user} />}
+            />
+            <Route
+              path="/my-orders"
+              element={<MyOrders user={user} />}
+            />
+            <Route
+              path="/cancel-order/:orderId"
+              element={<CancelOrder />}
+            />
+            <Route
+              path="/orders/:orderId" // Add route for order tracking
+              element={<OrderTracking />} 
+            />
           </Routes>
         </div>
       </Router>
