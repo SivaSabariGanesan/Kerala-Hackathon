@@ -7,35 +7,101 @@ export default function AdminDashboard() {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('All');
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    pageSize: 20 // Adjust as needed
+  });
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    fetchOrders(pagination.currentPage);
+  }, [pagination.currentPage]);
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (page = 1) => {
     try {
-      const response = await axios.get('http://localhost:5000/api/orders', {
-        withCredentials: true
+      setLoading(true);
+      const response = await axios.get(`http://localhost:5000/api/orders`, {
+        withCredentials: true,
+        params: {
+          page,
+          limit: pagination.pageSize
+        }
       });
-      setOrders(response.data);
+
+      // Check if response structure matches expected format
+      const ordersData = response.data.orders || response.data;
+      const totalCount = response.data.total || ordersData.length;
+
+      setOrders(ordersData);
+      setPagination(prev => ({
+        ...prev,
+        totalPages: Math.ceil(totalCount / pagination.pageSize)
+      }));
       setLoading(false);
     } catch (err) {
+      console.error('Fetch orders error:', err);
       setError(err.response?.data?.message || 'Failed to fetch orders');
       setLoading(false);
     }
   };
-
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
-      await axios.patch(
-        `http://localhost:5000/api/orders/${orderId}/status`,
-        { status: newStatus },
-        { withCredentials: true }
-      );
-      fetchOrders();
+      // Validate inputs
+      if (!orderId || !newStatus) {
+        setError('Invalid order ID or status');
+        return;
+      }
+
+      console.log('Attempting to update order:', {
+        orderId,
+        newStatus
+      });
+
+      // Ensure the correct endpoint and payload
+      const response = await axios.patch(`/api/orders/${orderId}/status`, { 
+        status: newStatus 
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // Handle successful response
+      console.log('Order status updated successfully:', response.data);
+      
+      // Clear any previous errors
+      setError(null);
+
+      // Optionally, refresh order list or update UI
+      // fetchOrders();
     } catch (error) {
-      alert('Failed to update order status');
+      // Comprehensive error handling
+      console.error('Error updating order status:', error);
+
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        setError(`Server Error: ${error.response.data.message || 'Failed to update order status'}`);
+        console.error('Server response:', error.response.data);
+        console.error('Status code:', error.response.status);
+      } else if (error.request) {
+        // The request was made but no response was received
+        setError('No response received from server');
+        console.error('Request made but no response:', error.request);
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        setError('Error setting up the request');
+        console.error('Error setting up request:', error.message);
+      }
     }
+  };
+
+
+  const handlePageChange = (newPage) => {
+    setPagination(prev => ({
+      ...prev,
+      currentPage: newPage
+    }));
   };
 
   if (loading) {
@@ -82,24 +148,24 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-gray-500 text-sm">Total Orders</h3>
-          <p className="text-2xl font-bold">{orders.length}</p>
+          <p className="text-2xl font-bold">{filteredOrders.length}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-gray-500 text-sm">Pending Orders</h3>
           <p className="text-2xl font-bold text-yellow-600">
-            {orders.filter(order => order.status === 'Pending').length}
+            {filteredOrders.filter(order => order.status === 'Pending').length}
           </p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-gray-500 text-sm">Delivered Orders</h3>
           <p className="text-2xl font-bold text-green-600">
-            {orders.filter(order => order.status === 'Delivered').length}
+            {filteredOrders.filter(order => order.status === 'Delivered').length}
           </p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-gray-500 text-sm">Cancelled Orders</h3>
           <p className="text-2xl font-bold text-red-600">
-            {orders.filter(order => order.status === 'Cancelled').length}
+            {filteredOrders.filter(order => order.status === 'Cancelled').length}
           </p>
         </div>
       </div>
@@ -200,6 +266,29 @@ export default function AdminDashboard() {
             ))}
           </tbody>
         </table>
+
+        {/* Pagination */}
+        <div className="flex justify-between items-center px-6 py-4">
+          <div>
+            Page {pagination.currentPage} of {pagination.totalPages}
+          </div>
+          <div className="space-x-2">
+            <button
+              onClick={() => handlePageChange(pagination.currentPage - 1)}
+              disabled={pagination.currentPage === 1}
+              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => handlePageChange(pagination.currentPage + 1)}
+              disabled={pagination.currentPage === pagination.totalPages}
+              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Order Details Modal */}
