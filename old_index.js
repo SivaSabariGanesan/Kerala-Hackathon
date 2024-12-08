@@ -217,7 +217,7 @@ app.patch('/api/orders/:id/cancel', async (req, res) => {
 
   try {
     const order = await Order.findOne({
-      _id: ObjectId(req.params.id),
+      _id: new ObjectId(req.params.id), // Fix: Using 'new' with ObjectId
       user: req.session.userId
     });
 
@@ -240,6 +240,7 @@ app.patch('/api/orders/:id/cancel', async (req, res) => {
     res.status(500).json({ message: 'Failed to cancel order' });
   }
 });
+
 
 // Admin Route to Fetch All Orders and User Details
 app.get('/api/admin/orders', async (req, res) => {
